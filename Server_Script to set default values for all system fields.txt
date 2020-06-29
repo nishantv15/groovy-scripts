@@ -1,0 +1,50 @@
+if(getActionName() != "Create"){
+    return
+}
+
+//system fields - single list
+//priority
+def priorityField = getFieldById("priority").setFormValue("High")
+
+//assignee
+def assigneeField = getFieldById("assignee").setFormValue("admin") //unassigned if empty
+
+//summary
+def summaryField = getFieldById("summary").setFormValue("This is for testing behaviours")
+
+//description
+def desc = """Enter the ID:
+
+Enter the supervisory:
+
+Enter the signature: """
+def descriptionField = getFieldById("description").setFormValue(desc)
+
+//epic link
+def epicLinkField = getFieldByName("Epic Link").setFormValue("NV-3")
+
+//reporter
+def reporterField = getFieldById("reporter").setFormValue("boatrockerz")
+
+//issue link
+def issueLinkField = getFieldByName("Linked Issues").setFormValue("duplicates")
+
+
+
+//system fields - multi list
+//labels
+def labelField = getFieldById("labels").setFormValue(["NV", "new label", "test"])
+
+//fix versions
+def fixVersionField = getFieldById("fixVersions").setFormValue(["10000", "10001"])
+
+//components
+def componentsField = getFieldById("components").setFormValue(["10000", "10001"])
+
+//link issues
+def linkIssueField = getFieldById("issuelinks").setFormValue(["NV-2"])
+
+
+
+
+
