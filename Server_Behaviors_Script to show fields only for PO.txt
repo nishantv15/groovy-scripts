@@ -1,0 +1,29 @@
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.security.roles.ProjectRoleManager  
+import com.atlassian.jira.security.roles.ProjectRole
+import com.atlassian.jira.project.ProjectManager
+import com.atlassian.jira.user.util.UserManager
+
+final String PROJECT_OWNER = "Project Owner";
+final String PROJECT_NAME = "TnT Jira Support Services";
+
+final boolean NOTES_VISIBLE = true;
+final boolean NOTES_NOT_VISIBLE = false;
+
+final String NOTES = "Notes";
+
+def loggedInUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+def projectManagerClass = ComponentAccessor.projectManager;
+def projectRoleManager = ComponentAccessor.getComponent(ProjectRoleManager);
+ProjectRole newRole = projectRoleManager.getProjectRole(PROJECT_OWNER);
+def project = projectManagerClass.getProjectObjByName(PROJECT_NAME);
+def notesField = getFieldByName(NOTES);
+
+    def projectRoles = projectRoleManager.isUserInProjectRole(loggedInUser, newRole, project);
+    if(projectRoles.equals(NOTES_VISIBLE)) {
+        notesField.setHidden(NOTES_NOT_VISIBLE);
+    } else {
+        notesField.setHidden(NOTES_VISIBLE);
+    }
+    

@@ -1,0 +1,11 @@
+def versionIdProductionMaintenance = "10214"
+def versionIdProductionUAT = "10306"
+def actionName = "Create"
+
+if (getActionName() != actionName) {
+    return // not the initial action, so don't set default values
+} 
+//get fixVersion ID
+def fixVersionsField = getFieldById("fixVersions")
+//set fixVersion value
+def fixVersionsNewValue = fixVersionsField.setFormValue([versionIdProductionMaintenance, versionIdProductionUAT])
