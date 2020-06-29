@@ -1,0 +1,27 @@
+import com.atlassian.jira.issue.IssueManager;
+import com.atlassian.jira.issue.MutableIssue;
+import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.user.ApplicationUser;
+
+//Workflow imports
+import com.atlassian.jira.issue.IssueInputParametersImpl
+import com.atlassian.jira.bc.issue.IssueService
+import com.atlassian.jira.workflow.JiraWorkflow
+import com.atlassian.jira.workflow.WorkflowManager
+
+ApplicationUser currentUser = ComponentAccessor.getJiraAuthenticationContext().loggedInUser
+IssueManager im = ComponentAccessor.getIssueManager();
+MutableIssue issue = im.getIssueObject("SP-5519");
+
+
+//Workflow
+WorkflowManager workflowManager = ComponentAccessor.getWorkflowManager()
+JiraWorkflow workflow = workflowManager.getWorkflow(issue)
+
+def actionId = 41
+IssueService issueService = ComponentAccessor.getIssueService()
+
+def transitionValidationResult = issueService.validateTransition(currentUser, issue.id, actionId, new IssueInputParametersImpl())
+
+def transitionResult = issueService.transition(currentUser, transitionValidationResult)
+return transitionResult
