@@ -1,0 +1,25 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.event.type.EventDispatchOption
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.MutableIssue
+import com.atlassian.jira.project.version.Version
+
+IssueManager issueManager = ComponentAccessor.getComponent(IssueManager.class)
+Issue updatedIssue = event.getIssue()
+log.error "Issue is: " + updatedIssue
+Collection<Version> fixVersions = new ArrayList<Version>()
+fixVersions = updatedIssue.getFixVersions()
+log.error "Fix versions of parent are: " + fixVersions
+Collection<Issue> subTasks = updatedIssue.getSubTaskObjects()
+log.error "Sub tasks are: " + subTasks
+subTasks.each {
+    log.error "Type : " + it.issueType.getName()
+    if(it.issueType.getName() == "Migration") {      
+    if (it instanceof MutableIssue) {
+        ((MutableIssue) it).setFixVersions(fixVersions)
+        issueManager.updateIssue(event.getUser(), it, EventDispatchOption.ISSUE_UPDATED, false)
+        log.error "Fix version of subbtask"
+    }
+   }
+}
