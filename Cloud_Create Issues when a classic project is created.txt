@@ -1,0 +1,204 @@
+/*
+
+Script to create issues of a particular issue type when
+a new project of classic type is created in JIRA cloud
+
+*/
+
+
+//get the project key on creation of project
+def projectKey = project.key;
+logger.info("The key of the project is: " + projectKey);
+
+//get call for project data based on project key
+def getProjectStyle = get("/rest/api/3/project/" + projectKey) 
+                        .header('Content-Type', 'application/json')
+                        .asObject(Map)
+     
+//project style                        
+def projectStyle = getProjectStyle.body.style;
+logger.info("Project Style is: " + projectStyle);
+
+//project id
+def projectId = getProjectStyle.body.id;
+logger.info("Project Id is: " + projectId);
+
+//variable used to assign rest call, later in the code
+def postCreateIssue;
+
+//issue type id
+def issueTypeId = "10002";
+
+//account id of assignee
+def accountIdOfAssignee = "5b4f068a3675c92cbbded6a2";
+
+//project style classic
+def projectStyleClassic = "classic";
+
+
+//condition to create issues only if it is classic project
+if(projectStyle == projectStyleClassic) {
+    postCreateIssue = post("/rest/api/3/issue/bulk")
+        .header("Content-Type", "application/json")
+        .body(
+        [
+                issueUpdates:  [
+                        [
+                                fields: [
+                                        summary    : "Create user profiles",
+                                        description: [
+                                                type: "doc",
+                                                version: 1,
+                                                content: [
+                                                    [
+                                                        type: "paragraph",
+                                                        content: [
+                                                                        [
+                                                                            text: "Create profiles for students in directory",
+                                                                            type: "text"
+                                                                        ]
+                                                                    ]
+                                                    ]
+                                                ]
+                                        ],
+                                        project    : [
+                                                id: projectId
+                                        ],
+                                        issuetype  : [
+                                                id: issueTypeId
+                                        ],
+                                        assignee: [
+                                                id: accountIdOfAssignee
+                                        ]
+                                ]
+                        ],
+                        [
+                                fields: [
+                                        summary    : "Create logo",
+                                        description: [
+                                                type: "doc",
+                                                version: 1,
+                                                content: [
+                                                    [
+                                                        type: "paragraph",
+                                                        content: [
+                                                                        [
+                                                                            text: "Create logos for the customer",
+                                                                            type: "text"
+                                                                        ]
+                                                                    ]
+                                                    ]
+                                                ]
+                                        ],
+                                        project    : [
+                                                id: projectId
+                                        ],
+                                        issuetype  : [
+                                                id: issueTypeId
+                                        ],
+                                        assignee: [
+                                                id: accountIdOfAssignee
+                                        ]
+                                ]
+                        ],
+                        [
+                                fields: [
+                                        summary    : "Create accounts",
+                                        description: [
+                                                type: "doc",
+                                                version: 1,
+                                                content: [
+                                                    [
+                                                        type: "paragraph",
+                                                        content: [
+                                                                        [
+                                                                            text: "Create accounts for each student n staff",
+                                                                            type: "text"
+                                                                        ]
+                                                                    ]
+                                                    ]
+                                                ]
+                                        ],
+                                        project    : [
+                                                id: projectId
+                                        ],
+                                        issuetype  : [
+                                                id: issueTypeId
+                                        ],
+                                        assignee: [
+                                                id: accountIdOfAssignee
+                                        ]
+                                ]
+                        ],
+                        [
+                                fields: [
+                                        summary    : "Create properties",
+                                        description: [
+                                                type: "doc",
+                                                version: 1,
+                                                content: [
+                                                    [
+                                                        type: "paragraph",
+                                                        content: [
+                                                                        [
+                                                                            text: "Create properties for students and staff",
+                                                                            type: "text"
+                                                                        ]
+                                                                    ]
+                                                    ]
+                                                ]
+                                        ],
+                                        project    : [
+                                                id: projectId
+                                        ],
+                                        issuetype  : [
+                                                id: issueTypeId
+                                        ],
+                                        assignee: [
+                                                id: accountIdOfAssignee
+                                        ]
+                                ]
+                        ],
+                        [
+                                fields: [
+                                        summary    : "Assign and implement",
+                                        description: [
+                                                type: "doc",
+                                                version: 1,
+                                                content: [
+                                                    [
+                                                        type: "paragraph",
+                                                        content: [
+                                                                        [
+                                                                            text: "Assign and implement the case",
+                                                                            type: "text"
+                                                                        ]
+                                                                    ]
+                                                    ]
+                                                ]
+                                        ],
+                                        project    : [
+                                                id: projectId
+                                        ],
+                                        issuetype  : [
+                                                id: issueTypeId
+                                        ],
+                                        assignee: [
+                                                id: accountIdOfAssignee
+                                        ]
+                                ]
+                        ]
+                ]   
+        ])
+        .asString()
+        
+} else {
+    logger.info("Project doesn't belong to classic style");
+}
+
+//success or failure of issue creation based on condition
+if(projectStyle == projectStyleClassic && postCreateIssue.status == 201) {
+    logger.info("Successfully added issues to project with key: ", projectKey);
+} else {
+    logger.error("Failed to bulk add issues to project with key: ", projectKey);
+}

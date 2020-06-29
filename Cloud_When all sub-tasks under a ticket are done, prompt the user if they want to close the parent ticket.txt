@@ -1,0 +1,72 @@
+// Check if issue types are sub-tasks
+if (!issue.fields.issuetype.subtask) { 
+    return
+}
+
+// Get the parent issue as a Map
+def parent = (issue.fields as Map).parent as Map
+
+// Retrieve all the subtasks of this issue's parent
+def parentKey = parent.key
+ logger.info("Parent Key: " + parentKey)
+
+// Specify the name of the version to extract from the issue
+def closedStatus = "Done"
+logger.info("Closed Status: " + closedStatus)
+
+// Get the parent issue object
+def result = get('/rest/api/2/issue/' + parentKey)
+        .header('Content-Type', 'application/json')
+        .asObject(Map)
+
+//Find the assignee name        
+def assignee = result.body.fields.assignee.displayName   
+logger.info("Assignee name is :" + assignee)
+        
+// Find the subtasks status 
+String[] subTasks = result.body.fields.subtasks
+logger.info("Subtasks length: " + subTasks.length)
+
+def allSubTasksResolved;
+
+for(int i = 0; i < subTasks.length; i++) {
+    
+    def subTasksStatus = result.body.fields.subtasks[i].fields.status.name
+    logger.info("sub task status: " + subTasksStatus)
+    
+    if(subTasks.findAll{subTasksStatus.contains(closedStatus)}){
+     allSubTasksResolved = true
+  }
+  
+    // If all subtasks have the Done status set the flag to true
+    if(subTasks.findAll{!subTasksStatus.contains(closedStatus)}){
+     allSubTasksResolved = false
+  }
+}
+
+if(allSubTasksResolved == true){
+    logger.info("All sub tasks are in Done status")
+    def prompt = post("/rest/api/2/issue/" + parentKey + "/notify")
+        .header("Content-Type", "application/json")
+        .body([
+        subject: 'All sub-tasks transitioned to Done status',
+        textBody: "All the sub-tasks related to " + parentKey + " are transitioned to Done status",
+        htmlBody: "<p>Do you want to close the </p>" + parentKey + "<p> issue?</p>" ,
+        to: [
+                users: [[
+                    name: assignee,
+                    active: true
+                ]]
+        ]
+])
+        .asString()
+
+    
+    
+} else if (allSubTasksResolved == false){ 
+    logger.info("All sub tasks are not in Done status")
+}
+
+
+
+        
