@@ -1,0 +1,83 @@
+/*
+Script to deactivate users if they have been created beyond 30 days and has nevre logged in
+Date created: 4th August 2020
+*/
+import java.util.Date
+import com.atlassian.crowd.embedded.api.CrowdService
+import com.atlassian.crowd.embedded.api.UserWithAttributes
+import com.atlassian.crowd.embedded.impl.ImmutableUser
+import com.atlassian.jira.bc.user.UserService
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.user.ApplicationUsers
+import com.atlassian.jira.user.util.UserUtil
+ 
+//Number of days the user has not logged in
+final NUMBER_OF_DAYS  = 30;
+
+//Set a date as a limit to validate against / the period in which the user is not validated against
+Date dateLimit = (new Date()) - NUMBER_OF_DAYS;
+ 
+UserUtil userUtil = ComponentAccessor.userUtil;
+CrowdService crowdService = ComponentAccessor.crowdService;
+UserService userService = ComponentAccessor.getComponent(UserService);
+ApplicationUser updateUser;
+UserService.UpdateUserValidationResult updateUserValidationResult;
+
+//List to push users who has never logged in / who's last login is null
+def list = [];
+
+//Loop to check the condition and deactivate users from instance
+userUtil.getUsers().findAll{it.isActive()}.each {
+    UserWithAttributes user = crowdService.getUserWithAttributes(it.getName());
+    
+    //Get the last logged in value of users in miliseconds / lastLoginMillis
+    String lastLoginMillis = user.getValue('login.lastLoginMillis');
+    
+    	//Condition to check if last logged in value is a number or null 
+        if (lastLoginMillis == null) {
+            list.push(it.getName());   
+        }
+}
+
+log.error "List: ${list}"
+
+//Get the list of users from instance
+def usersInInstance = ComponentAccessor.getOfBizDelegator().findAll("User");
+
+//Loop to get the created date if users
+usersInInstance.each { notLoggedInUsers ->
+    def userNames = notLoggedInUsers.getString("userName")
+    
+    //Condition to check if the list defined has these usernames
+    if (list.contains(userNames)) {
+        UserWithAttributes userToBeDeactivated = crowdService.getUserWithAttributes(userNames);
+        
+        //Get the created date for each user
+        def createdDateString = notLoggedInUsers.getString("createdDate")
+        
+        //Get only yyyy-MM-dd part from the date to convert to date object
+        def date = createdDateString[0..10]
+        def pattern = "yyyy-MM-dd"
+		def input = date
+        
+        //Convert date string to date object
+        def createdDateObject = Date.parse(pattern, input)
+        log.error "Created date of ${userNames} is ${createdDateObject}"
+        
+        //Condition to check if the created date is before the date limit
+        if(createdDateObject.before(dateLimit)) {
+            log.error "${userNames}'s creation date is beyond 30 days"
+            updateUser = ApplicationUsers.from(ImmutableUser.newUser(userToBeDeactivated).active(false).toUser());
+                updateUserValidationResult = userService.validateUpdateUser(updateUser);
+                if (updateUserValidationResult.isValid()) {
+                    
+                    //Deactivate users
+                    userService.updateUser(updateUserValidationResult);
+                    log.error "User Deactivated: ${userNames}"
+        }   
+        } else {
+            log.error "${userNames} will not be deactivated as their creation date is less than 30 days"
+        }
+  }
+}

@@ -1,0 +1,75 @@
+/*
+Script to deactivate users if they are inactive for long time and doesnt belong to Watchers_Only group
+Date created: 28th August 2020
+*/
+
+import com.atlassian.crowd.embedded.api.CrowdService
+import com.atlassian.crowd.embedded.api.UserWithAttributes
+import com.atlassian.crowd.embedded.impl.ImmutableUser
+import com.atlassian.jira.bc.user.UserService
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.user.ApplicationUsers
+import com.atlassian.jira.user.util.UserUtil
+import com.atlassian.jira.security.groups.GroupManager
+ 
+//Number of days the user has not logged in
+final NUMBER_OF_DAYS  = 575;
+
+//Counter to calculate amount of users deactivated starting 0
+def COUNTER = 0;
+
+//Set a date as a limit to validate against / the period in which the user is not validated against
+Date dateLimit = (new Date()) - NUMBER_OF_DAYS;
+
+final GROUP_ONE = "Watchers_Only";
+final GROUP_TWO = "Essential Accounts";
+ 
+UserUtil userUtil = ComponentAccessor.userUtil;
+CrowdService crowdService = ComponentAccessor.crowdService;
+UserService userService = ComponentAccessor.getComponent(UserService);
+ApplicationUser updateUser;
+UserService.UpdateUserValidationResult updateUserValidationResult;
+def groupManager = ComponentAccessor.getComponent(GroupManager);
+ 
+//Loop to check the condition and deactivate users from instance
+userUtil.getUsers().findAll{it.isActive()}.each {
+    
+    ApplicationUser userInGroup = ComponentAccessor.getUserManager().getUserByName(it.getName());
+    def isUserInGroup = groupManager.isUserInGroup(userInGroup, GROUP_ONE);
+    def isUserInSecondGroup = groupManager.isUserInGroup(userInGroup, GROUP_TWO);
+    
+    if(isUserInGroup == true) {
+        log.error "${it.getName()} NOT DEACTIVATED as they belong to ${GROUP_ONE}";
+    } 
+    else if(isUserInSecondGroup == true) {
+	log.error "${it.getName()} NOT DEACTIVATED as they belong to ${GROUP_TWO}";
+    }
+    
+    else {
+
+    UserWithAttributes user = crowdService.getUserWithAttributes(it.getName());
+    //Get the last logged in value of users in miliseconds / lastLoginMillis
+    String lastLoginMillis = user.getValue('login.lastLoginMillis');
+    
+    	//Condition to check if last logged in value is a number or null 
+        if (lastLoginMillis?.isNumber()) {
+           //Converts the timestamp value to [ Day Month Date HH:MM:SS Timezone Year ] format
+       	   Date convertTimeStampToDate = new Date(Long.parseLong(lastLoginMillis));
+           if (convertTimeStampToDate.before(dateLimit)) {
+                updateUser = ApplicationUsers.from(ImmutableUser.newUser(user).active(false).toUser());
+                updateUserValidationResult = userService.validateUpdateUser(updateUser);
+                if (updateUserValidationResult.isValid()) {
+                    userService.updateUser(updateUserValidationResult);
+                    log.error "${updateUser.name} DEACTIVATED as their last login is on ${convertTimeStampToDate}";
+                    COUNTER++;
+                } else {
+                    log.error "Update of ${user.name} failed: ${updateUserValidationResult.getErrorCollection().getErrors().entrySet().join(',')}";
+                }
+            }
+        }
+     }
+}
+ 
+"${COUNTER} users deactivated.\n";
+
