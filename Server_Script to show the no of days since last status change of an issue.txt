@@ -1,0 +1,36 @@
+import com.atlassian.jira.ComponentAccessor
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.CustomFieldManager
+import com.atlassian.jira.issue.fields.CustomField
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.Issue
+import java.util.Date
+import com.atlassian.jira.event.type.EventDispatchOption
+
+def user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+
+def issueMgr = ComponentAccessor.getIssueManager();
+//def pId = issueMgr.getIssueIdsForProject("10300")
+def issues = issueMgr.getIssueObject("UCP-95165");
+
+CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager();
+CustomField testField = customFieldManager.getCustomFieldObject("customfield_13000");
+def testFieldValue = issues.getCustomFieldValue(testField).toString();
+log.error("Time In Status : ${testFieldValue}");
+CustomField timeChange = customFieldManager.getCustomFieldObject("customfield_13001");
+
+Date dateLimit = new Date();
+log.error("Today's date : ${dateLimit}");
+
+def date = testFieldValue[0..10];
+def pattern = "yyyy-MM-dd";
+def input = date;
+        
+def createdDateObject = Date.parse(pattern, input);
+log.error("Date Object: ${createdDateObject}");
+
+def difference = dateLimit - createdDateObject;
+log.error("Difference of days: ${difference}");
+
+issues.setCustomFieldValue(timeChange, difference);
+//issueMgr.updateIssue(user, issues, EventDispatchOption.DO_NOT_DISPATCH, false);

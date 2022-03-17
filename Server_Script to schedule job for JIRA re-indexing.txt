@@ -1,0 +1,83 @@
+/*
+Script to schedule job for JIRA re-indexing 
+*/
+
+import groovy.json.StreamingJsonBuilder
+import com.atlassian.jira.component.ComponentAccessor
+
+//get local base url
+def baseurl = ComponentAccessor.getApplicationProperties().getString("jira.baseurl");
+//rest api endpoint for re-indexing
+final ENDPOINT = "/rest/api/2/reindex";
+//api endpoint for post request
+final POST_ENDPOINT = baseurl + ENDPOINT;
+//post method
+final METHOD_POST = "POST";
+//get method
+final METHOD_GET = "GET";
+//admin username and password
+final USERNAME = "nishanth";
+final PASSWORD = "admin";
+
+def taskId;
+
+//authorization string
+def authString = (USERNAME + ":" + PASSWORD).getBytes().encodeBase64().toString();
+
+//base64 encoded string for requests
+final BASE64_ENCODED = "Basic ${authString}";
+//content-type for requests
+final CONTENT_TYPE = "application/json;charset=UTF-8";
+
+
+//calling post method api
+def postConnection = new URL(POST_ENDPOINT).openConnection() as HttpURLConnection
+postConnection.setRequestMethod(METHOD_POST);
+postConnection.setRequestProperty("Authorization", BASE64_ENCODED);
+postConnection.doOutput = true;
+postConnection.setRequestProperty("Content-Type", CONTENT_TYPE);
+postConnection.connect();
+
+//post method api response code
+def postRes = postConnection.getResponseCode();
+log.warn("Response code after re-indexing: " + postRes);
+
+//if successfull response code says 202
+if(postRes.equals(202)) { 
+    def postResponseUrl = postConnection.getInputStream().getText();
+    taskId = postResponseUrl[61..65];
+    log.warn("Test re-indexing url: " + baseurl + postResponseUrl[16..65] + "  ");
+    log.warn("Task Id after re-indexing is: " + taskId);
+} else {
+    log.warn("Unable to establish connection " + METHOD_POST);
+}
+
+/*
+//api endpoint for get request
+final GET_ENDPOINT = baseurl + ENDPOINT + "?" + taskId;
+
+//calling get method api
+def getConnection = new URL(GET_ENDPOINT).openConnection() as HttpURLConnection
+getConnection.setRequestMethod(METHOD_GET);
+getConnection.setRequestProperty("Authorization", BASE64_ENCODED);
+getConnection.doOutput = true;
+getConnection.setRequestProperty("Content-Type", CONTENT_TYPE);
+getConnection.connect();
+
+//get method api response code
+def getRes = getConnection.getResponseCode();
+log.warn("Response code for acknowledgement: " + getRes);
+def getResponseUrl;
+//if successfull response code says 200
+if(getRes.equals(200)) { 
+    getResponseUrl = getConnection.getInputStream().getText();
+    log.warn("Re-indexing is successfull");
+} else {
+    log.warn("Unable to establish connection " + METHOD_GET);
+}
+*/
+
+
+
+
+
