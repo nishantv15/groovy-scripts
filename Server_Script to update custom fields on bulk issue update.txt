@@ -1,0 +1,68 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.ModifiedValue
+import com.atlassian.jira.issue.search.SearchProvider
+import com.atlassian.jira.issue.util.DefaultIssueChangeHolder
+import com.atlassian.jira.jql.parser.JqlQueryParser
+import com.atlassian.jira.web.bean.PagerFilter
+import com.atlassian.jira.issue.search.SearchQuery
+
+// Issues returned from that JQL will get altered
+final searchQuery = "project in ('UCPath AWS Migration') AND issuetype not in ('Test Plan', 'Test Set', Test, 'Test Execution', Testing, 'Sub Test Execution')"
+
+// The name of the custom field to alter
+final customFieldToUpdate = "No of Days - Time Change"
+
+// The custom field value to fetch 
+final customFieldToFetch = "Test"
+
+// Get some components
+def jqlQueryParser = ComponentAccessor.getComponent(JqlQueryParser)
+def searchProvider = ComponentAccessor.getComponent(SearchProvider)
+def issueManager = ComponentAccessor.issueManager
+def user = ComponentAccessor.jiraAuthenticationContext.loggedInUser
+
+// Perform the JQL search
+def query = jqlQueryParser.parseQuery(searchQuery)
+def searchResults = searchProvider.search(SearchQuery.create(query, user), PagerFilter.unlimitedFilter)
+
+// Iterate all results to update each issue
+searchResults.results.each { documentIssue ->
+
+	def key = documentIssue.document.fields.find { it.name() == "key" }.stringValue()
+    def issue = issueManager.getIssueObject(key)
+
+	// Get the custom field
+	def customFieldUpdateNew = ComponentAccessor.customFieldManager.customFieldObjects.findByName(customFieldToUpdate)
+	assert customFieldUpdateNew : "Could not find custom field with name ${customFieldToUpdate}"
+	
+	// Get the second custom field
+	def customFieldFetch = ComponentAccessor.customFieldManager.customFieldObjects.findByName(customFieldToFetch)
+	assert customFieldFetch : "Could not find custom field with name ${customFieldToFetch}"
+	def customFieldFetchToString = issue.getCustomFieldValue(customFieldFetch).toString();
+	
+	Date dateLimit = new Date();
+
+	def date = customFieldFetchToString[0..10];
+	def pattern = "yyyy-MM-dd";
+	def input = date;
+        
+	def createdDateObject = Date.parse(pattern, input);
+
+	def difference = dateLimit - createdDateObject;
+	
+	// The new value to set
+	//final newValue = difference
+	 
+    customFieldUpdateNew.updateValue(null, issue, new ModifiedValue(issue.getCustomFieldValue(customFieldUpdateNew), difference), new DefaultIssueChangeHolder())
+}
+
+
+
+
+
+
+
+
+
+
+
