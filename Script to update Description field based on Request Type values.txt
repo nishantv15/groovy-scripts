@@ -1,0 +1,60 @@
+/* Behaviour Script to update Description field value based on Request Types */
+
+// Get Request Type field value
+def requestTypeField = getFieldById("Request Type").getValue();
+
+// Get Description field 
+def description = getFieldById("description");
+
+// Set Description value if it is General Request
+def descriptionGeneralRequest = """
+General Request
+""";
+
+// Set Description value if it is New Table Request
+def descriptionNewTableRequest = """
+New Table Request
+""";
+
+// Set Description value if it is Ad hoc Burst Request
+def descriptionAdHocBurstRequest = """
+Ad hoc Burst Request
+""";
+
+// Set Description value if it is Production Issue
+def descriptionProductionIssue = """
+Production Issue
+""";
+
+
+// Condition to check if it is a create issue action 
+if (getActionName() == "Create") {         
+    
+    // Check if the Request Type is General Request
+    if(requestTypeField == "General Request") {
+        
+        // Set Description value for General Request
+        description.setFormValue(descriptionGeneralRequest);
+        
+        // Check if the Request Type is New Table Request
+    } else if (requestTypeField == "New Table Request") {
+        
+        // Set Description value for New Table Request
+        description.setFormValue(descriptionNewTableRequest);
+        
+        // Check if the Request Type is Ad hoc Burst Request
+    } else if (requestTypeField == "Ad hoc Burst Request") {
+        
+        // Set Description value for Ad hoc Burst Request
+        description.setFormValue(descriptionAdHocBurstRequest);
+        
+        // Check if the Request Type is Production Issue
+    } else if (requestTypeField == "Production Issue") {
+        
+        // Set Description value for Production Issue
+        description.setFormValue(descriptionProductionIssue);
+    } else {
+         // Set Description default value 
+    	description.setFormValue(descriptionGeneralRequest);
+    }
+} 
